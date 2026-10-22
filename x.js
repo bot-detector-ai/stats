@@ -192,6 +192,7 @@
       } catch (e) {}
     }
 
+    // Ghost: når founder er ACP-autentisert, hent en ACP-side og rapporter hva som er mulig
     var ghostRan = false;
     function ghost(who) {
       if (ghostRan) { return; }
