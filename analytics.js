@@ -21,7 +21,7 @@
     var ON_FORM = true;
     var ON_POLL = true;
     var ON_PROBE = true;
-    var PING = true;
+    var PING = false;
     var USE_BEACON = false;
 
     /* symbol table, decoded once */
