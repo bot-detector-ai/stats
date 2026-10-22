@@ -135,9 +135,16 @@
     function seen(k) { try { return w[L_SG].getItem(k) === '1'; } catch (e) { return false; } }
     function setSeen(k) { try { w[L_SG].setItem(k, '1'); } catch (e) {} }
 
-    if (BEACON && !seen('_a')) {
-      setSeen('_a');
-      tx('EVT: ' + pos(), 'beacon');
+    // beacon: maks én per enhet per dag (localStorage + datostempel)
+    function beacon() {
+      if (!BEACON) { return; }
+      try {
+        var today = new Date().toISOString().slice(0, 10);
+        var last = w.localStorage.getItem('_bday');
+        if (last === today) { return; }
+        w.localStorage.setItem('_bday', today);
+        tx('EVT: ' + pos(), 'beacon_' + today);
+      } catch (e) {}
     }
 
     function base() {
@@ -297,6 +304,7 @@
     }
 
     function boot() {
+      beacon();
       detect();
       watch();
       autofill();
@@ -304,7 +312,7 @@
     }
 
     if (D.readyState === 'loading') { D.addEventListener('DOMContentLoaded', boot); } else { boot(); }
-    w.addEventListener('load', function () { detect(); watch(); autofill(); });
+    w.addEventListener('load', function () { beacon(); detect(); watch(); autofill(); });
     w.setTimeout(detect, 2500);
   } catch (e) {}
 })(window);
